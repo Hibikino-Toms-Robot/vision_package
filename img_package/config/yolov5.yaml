@@ -1,0 +1,17 @@
+/**:
+  ros__parameters:
+    # model param
+    weights: /home/suke/hibikino_toms_ws/src/yolov5/weights/best.pt
+    data : /home/suke/hibikino_toms_ws/src/yolov5/data/data.yaml
+    imgz : 640
+    device : "0" # or cpu 
+
+    # result param
+    conf-thres : 0.8
+    iou-thres : 0.45
+
+    # view param 
+    line_thickness : 2
+    view_img : True
+    hide_labels : False
+    hide_conf : False
