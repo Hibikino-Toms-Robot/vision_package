@@ -13,5 +13,6 @@
     #ros2_topic
     image_topic : /camera/color/image_raw
     depth_topic : /camera/depth/image_rect_raw
+    seg_topic : /SegInfo
     camera_info_topic : /wamv/sensors/cameras/ball_shooter_camera_sensor/optical/camera_info
     

@@ -14,6 +14,7 @@ from cv_bridge import CvBridge, CvBridgeError
 from sensor_msgs.msg import Image, CameraInfo
 from std_msgs.msg import Header
 from bboxes_ex_msgs.msg import BoundingBoxes, BoundingBox
+from std_msgs.msg import Float32MultiArray, MultiArrayLayout, MultiArrayDimension
 
 #yolo_lib
 sys.path.append("/home/suke/hibikino_toms_ws/src/yolov5")
@@ -119,24 +120,25 @@ class Yolov5(Node):
             self.detect_img_pub_.publish(mat_image)
         except CvBridgeError as e:
             print("Failure to convert") 
-        
 
+        
     def yolovFive2bboxes_msgs(self, bboxes:list, scores:list, cls:list, img_header:Header):
         bboxes_msg = BoundingBoxes()
         bboxes_msg.header = img_header
         i = 0
         for score in scores:
             one_box = BoundingBox()
-            one_box.xmin = int(bboxes[0][i])
-            one_box.ymin = int(bboxes[1][i])
-            one_box.xmax = int(bboxes[2][i])
-            one_box.ymax = int(bboxes[3][i])
-            one_box.probability = float(score)
-            one_box.class_id = cls[i]
+            center_x = int((bboxes[0][i]+bboxes[2][i])/2)
+            center_y = int((bboxes[1][i]+bboxes[3][i])/2)
+            img_wight = int(bboxes[2][i]-bboxes[0][i])
+            img_hight = int(bboxes[3][i]-bboxes[1][i])
+            one_box.tom_pos = [center_x,center_y,img_wight,img_hight]
             bboxes_msg.bounding_boxes.append(one_box)
             i = i+1
         return bboxes_msg
-
+    
+        
+        return box_result
     @torch.no_grad()
     def detect(self, img0):
         img = letterbox(img0, self.imgsz, stride=self.stride)[0]
@@ -187,8 +189,6 @@ class Yolov5(Node):
             return img0, class_list, confidence_list, x_min_list, y_min_list, x_max_list, y_max_list
         else:
             return img0, [], [], [], [], [], []
-
-
 
 def main():
     rclpy.init()

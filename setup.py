@@ -2,7 +2,7 @@ import os
 from glob import glob
 from setuptools import find_packages, setup
 
-package_name = 'img_package'
+package_name = 'vision_package'
 
 setup(
     name=package_name,
@@ -20,15 +20,16 @@ setup(
     install_requires=['setuptools'],
     zip_safe=True,
     maintainer='suke',
-    maintainer_email='keeeesukee@gmail.com',
-    description='TODO: Package description',
+    maintainer_email='keisuke.yoshida622@mail.kyutech.jp',
+    description='vision node for tomato robots',
     license='TODO: License declaration',
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-            'image_publisher = img_package.image_publisher:main',
-            'object_detect = img_package.object_detect:main',
-            'yolov5_ros2 = img_package.yolov5_ros2:main',
+            'image_publisher = vision_package.image_publisher:main',
+            'yolov5_ros2 = vision_package.yolov5_ros2:main',
+            'seg_ros2 = vision_package.seg_ros2:main',
+            'harvest_order = vision_package.harvest_order:main',
         ],
     },
 )
