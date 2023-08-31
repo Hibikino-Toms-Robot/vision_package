@@ -13,7 +13,7 @@ from rclpy.node import Node
 from sensor_msgs.msg import Image
 from std_msgs.msg import Int64
 from cv_bridge import CvBridge, CvBridgeError
-
+from sensor_msgs.msg import CameraInfo
 
 #my package
 import sys
@@ -30,7 +30,7 @@ class Image_Publisher(Node):
         self.filter = ClearViewProcessor()
         #param
         self.declare_parameter('cam_num',1)
-        self.declare_parameter('cam_mode',"")
+        self.declare_parameter('cam_mode',"realsense")
         self.declare_parameter('debug',False)
         self.cam_num = self.get_parameter('cam_num').get_parameter_value().integer_value
         self.cam_mode = self.get_parameter('cam_mode').get_parameter_value().string_value
@@ -43,17 +43,31 @@ class Image_Publisher(Node):
         self.color_pub_ = self.create_publisher(Image, '/camera/color/image_raw', 10)
         self.depth_pub_ = self.create_publisher(Image, '/camera/depth/image_rect_raw', 10)
         
+        
         if self.cam_mode == "realsense":
             if self.cam_num == 2 :
                 self.device = "218622271154"
                 self.realsense = Realsense_Module()
-                self.realsense = Realsense_Module()
+                fx,fy,cx,cy = self.realsense.get_cam_param()
             else :
                 self.realsense = Realsense_Module()
+                fx,fy,cx,cy = self.realsense.get_cam_param()
         else : 
             self.midas = Midas()
-            self.cam = cv2.VideoCapture(-1)  
-            
+            self.cam = cv2.VideoCapture(-1) 
+
+        self.camera_info_msg = CameraInfo()
+        self.camera_info_msg.header.frame_id = 'camera_frame'
+        self.camera_info_msg.height = 480
+        self.camera_info_msg.width = 640
+        self.camera_info_msg.distortion_model = 'plumb_bob'
+        self.camera_info_msg.d = [0.0, 0.0, 0.0, 0.0, 0.0]  # 歪み係数
+        self.camera_info_msg.k = [fx, 0.0, cx, 0.0, fy, cy, 0.0, 0.0, 1.0]  # カメラ行列
+        self.camera_info_msg.r = [1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0]  # 回転行列(世界座標系⇨カメラ座標系)
+        self.camera_info_msg.p = [fx, 0.0, cx, 0.0, 0.0, fy, cy, 0.0, 0.0, 0.0, 1.0, 0.0]  # 投影行列
+        self.camera_info_pub_ = self.create_publisher(CameraInfo, 'camera_info_topic', 10)  
+
+
     def timer_callback(self):
         if self.cam_mode == "realsense":
             color_image,depth_image = self.realsense.get_image()  
@@ -77,6 +91,8 @@ class Image_Publisher(Node):
         except CvBridgeError as e:
             print("Failure to convert") 
   
+        self.camera_info_pub_.publish(self.camera_info_msg)
+
     def limit_area(self,color_image,depth_image,left=0,right=600,top=0,bottom=500):
         lim_colorimage=color_image[left:right,top:bottom,:]
         lim_depth_image=depth_image[left:right,top:bottom]

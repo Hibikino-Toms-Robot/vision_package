@@ -52,7 +52,7 @@ class Seg_Module(Node):
             #ros→opencv format
             image_raw = self.bridge.imgmsg_to_cv2(image, 'bgr8')
             h,w,c = image_raw.shape
-            outputs = self.seg_process(image_raw)
+            outputs = self.segmentation_process(image_raw)
             outputs = cv2.resize(outputs.astype(np.uint8),dsize=(w,h))
             outputs_rgb = self.convert_to_rgb(outputs,self.color_map)     
             cv2.imshow('object_detect', outputs_rgb)   
@@ -66,7 +66,7 @@ class Seg_Module(Node):
         except CvBridgeError as e:
             print("Failure to convert") 
 
-    def seg_process(self,image_raw):
+    def segmentation_process(self,image_raw):
         image_raw = cv2.cvtColor(image_raw,cv2.COLOR_BGR2RGB)
         image_raw = PIL.Image.fromarray(image_raw)
         image_raw = self.transform(image_raw)

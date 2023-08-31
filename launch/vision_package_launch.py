@@ -25,7 +25,7 @@ def generate_launch_description():
             executable='image_publisher',
             name='image_publisher',
             parameters = [img_config],
-            #output = 'screen',
+            output = 'screen',
         ),
         Node(
             package='vision_package',

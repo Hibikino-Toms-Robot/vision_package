@@ -106,15 +106,6 @@ class Realsense_Module():
     def __init__(self,device = None) :
         self.setup(device)
 
-        #camera param
-        cam_pos=np.array([0,0,0])
-        arm_pos=np.array([0,0,0])
-        world_pos=np.array([0,0,0])
-        self.cam_rotation_matrix=np.array([[1,0,0],[0,1,0], [0,0,1]])
-        self.cam_translation_vector=world_pos-cam_pos
-        self.arm_rotation_matrix=np.array([[1,0,0],[0,1,0], [0,0,1]])
-        self.arm_translation_vector=arm_pos-world_pos
-
     def setup(self,device=None):
         self.conf = rs.config()
         if device is not None:
@@ -130,6 +121,11 @@ class Realsense_Module():
         #get_camera_param
         self.depth_intrinsics = rs.video_stream_profile(self.profile.get_stream(rs.stream.depth)).get_intrinsics()
         self.color_intrinsics = rs.video_stream_profile(self.profile.get_stream(rs.stream.color)).get_intrinsics()
+
+    def get_cam_param(self):
+        fx, fy = self.color_intrinsics.fx, self.color_intrinsics.fy
+        cx, cy = self.color_intrinsics.ppx, self.color_intrinsics.ppy
+        return fx,fy,cx,cy
 
     def get_image(self) :
         try :
@@ -175,76 +171,6 @@ class Realsense_Module():
         filter_frame = hole_filling.process(filter_frame)
         result_frame = filter_frame.as_depth_frame()
         return result_frame
-
-    def transformation(self,tom_pos_matrix):
-        target_coordinates = np.array([])
-        for tom_pos in tom_pos_matrix :
-            u,v,Z = tom_pos[0],tom_pos[1],tom_pos[2]
-            #img→cam
-            camera_coordinate = rs.rs2_deproject_pixel_to_point(self.color_intrinsics , [u,v],Z) #カメラ座標のx,y取得
-            #image→arm
-            world_coordinate=self.camera_to_world(camera_coordinate,self.cam_rotation_matrix,self.cam_translation_vector)
-            #target coordinates
-            target_coordinate = self.world_to_arm(world_coordinate,self.arm_rotation_matrix,self.arm_translation_vector)
-            target_coordinates = np.vstack((target_coordinates,target_coordinate))
-        return target_coordinates
-
-    def camera_to_world(self,camera_coordinates,rotation_matrix,translation_vector):
-        world_coordinates = rotation_matrix @ camera_coordinates + translation_vector
-        x,y,z = world_coordinates
-        return  np.array([z,x,y])
-
-    def world_to_arm(self,camera_coordinates,rotation_matrix,translation_vector):
-        target_coordinates = rotation_matrix @ camera_coordinates + translation_vector
-        return target_coordinates
-
-# 座標変換ツール
-class Transform():
-    def __init__(self) :
-        #焦点距離
-        self.fx = 0
-        self.fy = 0
-        #カメラ中心座標
-        self.cx = 0
-        self.cy = 0
-        #カメラ高さ
-        self.HIGHT=0
-        cam_pos=np.array([-5.5, 107.0, -4.0])
-        arm_pos=np.array([64.0,-40.0,79.5])
-        world_pos=np.array([0, 0, 0])
-        self.cam_rotation_matrix=np.array([[1,0,0],[0,1,0], [0,0,1]])
-        self.cam_translation_vector=world_pos-cam_pos
-        self.arm_rotation_matrix=np.array([[1,0,0],[0,1,0], [0,0,1]])
-        self.arm_translation_vector=arm_pos-world_pos
-
-    def transformation(self,tom_pos_matrix):
-        target_coordinates = np.array([])
-        for tom_pos in tom_pos_matrix :
-            u,v,Z = tom_pos[0],tom_pos[1],tom_pos[2]
-            #img→cam
-            camera_coordinate = self.image_to_camera(u,v,Z)
-            #image→arm
-            world_coordinate = self.camera_to_world(camera_coordinate,self.cam_rotation_matrix,self.cam_translation_vector)
-            #target coordinates
-            target_coordinate = self.world_to_arm(world_coordinate,self.arm_rotation_matrix,self.arm_translation_vector)
-            target_coordinates = np.vstack((target_coordinates,target_coordinate))
-        return target_coordinates
-
-    def image_to_camera(self,u, v, Z):
-            X_c = (u - self.cx) * Z / self.fx 
-            Y_c = ((self.HIGHT-v) - self.cy) * Z / self.fy
-            Z_c = Z
-            camera_coordinates = np.array([X_c, Y_c, Z_c])
-            return camera_coordinates            
-    def camera_to_world(self,camera_coordinates,rotation_matrix,translation_vector):
-                world_coordinates = rotation_matrix @ camera_coordinates + translation_vector
-                x,y,z = world_coordinates
-                return  np.array([z,x,y])
-
-    def world_to_arm(self,camera_coordinates,rotation_matrix,translation_vector):
-                target_coordinates = rotation_matrix @ camera_coordinates + translation_vector
-                return target_coordinates
-
 
 class Midas():  
     def __init__(self):

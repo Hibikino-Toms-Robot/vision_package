@@ -1,7 +1,7 @@
 /**:
   ros__parameters:
     #camra_param
-    cam_mode: video_cam   #realsense #or #video_cam  
+    cam_mode: realsense   #realsense #or #video_cam  
     cam_num : 1 #or2
 
     #debug_mode
