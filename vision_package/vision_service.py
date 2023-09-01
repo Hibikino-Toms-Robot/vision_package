@@ -1,57 +1,45 @@
 import rclpy  # ROS2のPythonモジュールをインポート
 from rclpy.node import Node 
-from std_msgs.msg import String ,Bool
-from geometry_msgs.msg import Twist 
-from sensor_msgs.msg import Image
-from std_msgs.msg import Int64
 from std_msgs.msg import Float32MultiArray, MultiArrayLayout, MultiArrayDimension
-
-
-from cv_bridge import CvBridge, CvBridgeError
-import math
-import sys
-import cv2
-from cv_bridge import CvBridge
-import numpy as np
-import time
-sys.path.append("/home/suke/toms_ws/src/image_node/image_node")
-from realsense_setup import Realsense_Module
-from utils import Coordinate_Transformation,Maturity_Judgment
-from instanse_seg  import Segmantation_Model
-from command_service.srv import DetectComand,AnalyzeComand
+from bboxes_ex_msgs.msg import BoundingBoxes, BoundingBox
 
 
 class Vision_Service(Node):  
     def __init__(self):
         super().__init__('vision_service') 
 
-        
+        #
+        self.harvest_order = Float32MultiArray()
+        self.yolo_result = BoundingBoxes()
+
         #subscriber
         self.subscriber_ = self.create_subscription(BoundingBoxes, "Yolov5_Result",self.yolo_callback,10)
-        self.subscriber_ = self.create_subscription(BoundingBoxes, "Yolov5_Result",self.yolo_callback,10)
+        self.subscriber_ = self.create_subscription(Float32MultiArray,"/harvest_order",self.harvest_order_callback,10)
 
         #service
         self.detect_srv = self.create_service(DetectComand,"tmt_detect", self.detect_check)
         self.analyze_srv = self.create_service(AnalyzeComand,"analyze_pos", self.get_target_pose) 
     
     def yolo_callback(self,msg):
-        pass
+        self.yolo_result = msg
 
 
-    def detect_check(self,request, response):
-        self.process()
-        response.detect=self.tmt_detect_
-        return response
+    def harvest_order_callback(self,msg):
+        self.harvest_order = msg
 
-    def get_target_pose(self,request, response):
-        response.target_pos = self._numpy2multiarray(numpy_array)
-        return response
+    # def detect_check(self,request, response):
+    #     response.detect=self.tmt_detect_
+    #     return response
+
+    # def get_target_pose(self,request, response):
+    #     response.target_pos = self._numpy2multiarray(numpy_array)
+    #     return response
 
 
             
 def main():
     rclpy.init() 
-    node=Image_Processing() 
+    node=Vision_Service() 
     try :
         rclpy.spin(node) 
         

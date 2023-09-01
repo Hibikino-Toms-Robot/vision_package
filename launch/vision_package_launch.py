@@ -50,6 +50,14 @@ def generate_launch_description():
             output = 'screen',
         ),
 
+        Node(
+            package='vision_package',
+            executable='vision_service',
+            name='vision_service',
+            # parameters = [img_config],
+            output = 'screen',
+        ),
+
         # Node(
         #         package="rviz2",
         #         executable="rviz2",

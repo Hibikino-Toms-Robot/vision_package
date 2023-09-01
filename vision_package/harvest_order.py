@@ -35,9 +35,9 @@ class Transform():
         self.arm_translation_vector=arm_pos-world_pos
 
     def transformation(self,tom_pos_matrix,fx,fy,cx,cy):
-        target_coordinates = np.empty((0,3))
+        target_coordinates = np.empty((0,4))
         for tom_pos in tom_pos_matrix :
-            u,v,Z = tom_pos[0],tom_pos[1],tom_pos[2]
+            u,v,Z,harvest_path = tom_pos[0],tom_pos[1],tom_pos[2],tom_pos[3]
             #img→cam
             #camera_coordinate = rs.rs2_deproject_pixel_to_point(self.color_intrinsics , [u,v],Z) #カメラ座標のx,y取得
             camera_coordinate = self.image_to_camera(u,v,Z,fx,fy,cx,cy)
@@ -45,24 +45,25 @@ class Transform():
             world_coordinate = self.camera_to_world(camera_coordinate,self.cam_rotation_matrix,self.cam_translation_vector)
             #target coordinates
             target_coordinate = self.world_to_arm(world_coordinate,self.arm_rotation_matrix,self.arm_translation_vector)
+            target_coordinate = np.append(target_coordinate, harvest_path)
             target_coordinates = np.vstack((target_coordinates,target_coordinate))
         return target_coordinates
 
     def image_to_camera(self,u, v, Z,fx,fy,cx,cy):
-            X_c = (u - cx) * Z / fx 
-            Y_c = ((self.HIGHT-v) - cy) * Z / fy
-            Z_c = Z
-            camera_coordinates = np.array([X_c, Y_c, Z_c])
-            return camera_coordinates         
+        X_c = (u - cx) * Z / fx 
+        Y_c = ((self.HIGHT-v) - cy) * Z / fy
+        Z_c = Z
+        camera_coordinates = np.array([X_c, Y_c, Z_c])
+        return camera_coordinates         
 
     def camera_to_world(self,camera_coordinates,rotation_matrix,translation_vector):
-                world_coordinates = rotation_matrix @ camera_coordinates + translation_vector
-                x,y,z = world_coordinates
-                return  np.array([z,x,y])
+        world_coordinates = rotation_matrix @ camera_coordinates + translation_vector
+        x,y,z = world_coordinates
+        return  np.array([z,x,y])
 
     def world_to_arm(self,camera_coordinates,rotation_matrix,translation_vector):
-                target_coordinates = rotation_matrix @ camera_coordinates + translation_vector
-                return target_coordinates
+        target_coordinates = rotation_matrix @ camera_coordinates + translation_vector
+        return target_coordinates
 
 
 
@@ -202,7 +203,7 @@ class Harvest_Order(Node):
         x1, y1 = matrix1[0],matrix1[1]
         x2, y2 = matrix2[0],matrix2[1]
         distance = np.sqrt((x2 - x1)**2 + (y2 - y1)**2)
-        if distance >10:
+        if distance < 80:
             flag = True
         else :
             flag = False
@@ -229,7 +230,6 @@ class Harvest_Order(Node):
                 tom_pos_matrix = np.vstack((tom_pos_matrix,new_element))
             else : 
                 pass
-        
         return  tom_pos_matrix
 
     def _numpy2multiarray(self, np_array):

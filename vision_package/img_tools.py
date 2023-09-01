@@ -125,7 +125,7 @@ class Realsense_Module():
     def get_cam_param(self):
         fx, fy = self.color_intrinsics.fx, self.color_intrinsics.fy
         cx, cy = self.color_intrinsics.ppx, self.color_intrinsics.ppy
-        return fx,fy,cx,cy
+        return fx,fy,cx,cy,self.WIDTH, self.HEIGHT
 
     def get_image(self) :
         try :

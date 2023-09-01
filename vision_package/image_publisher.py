@@ -21,9 +21,6 @@ sys.path.append("/home/suke/hibikino_toms_ws/src/vision_package/vision_package")
 from img_tools import ClearViewProcessor,Realsense_Module,Midas
 
 
-
-
-
 class Image_Publisher(Node):  
     def __init__(self):
         super().__init__('image_publisher') 
@@ -48,18 +45,18 @@ class Image_Publisher(Node):
             if self.cam_num == 2 :
                 self.device = "218622271154"
                 self.realsense = Realsense_Module()
-                fx,fy,cx,cy = self.realsense.get_cam_param()
+                fx,fy,cx,cy,width,height = self.realsense.get_cam_param()
             else :
                 self.realsense = Realsense_Module()
-                fx,fy,cx,cy = self.realsense.get_cam_param()
+                fx,fy,cx,cy,width,height = self.realsense.get_cam_param()
         else : 
             self.midas = Midas()
             self.cam = cv2.VideoCapture(-1) 
 
         self.camera_info_msg = CameraInfo()
         self.camera_info_msg.header.frame_id = 'camera_frame'
-        self.camera_info_msg.height = 480
-        self.camera_info_msg.width = 640
+        self.camera_info_msg.width = width
+        self.camera_info_msg.height = height
         self.camera_info_msg.distortion_model = 'plumb_bob'
         self.camera_info_msg.d = [0.0, 0.0, 0.0, 0.0, 0.0]  # 歪み係数
         self.camera_info_msg.k = [fx, 0.0, cx, 0.0, fy, cy, 0.0, 0.0, 1.0]  # カメラ行列
