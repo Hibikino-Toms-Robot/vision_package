@@ -30,15 +30,15 @@ git clone git@github.com:suke-toudara/vision_package.git
 
 **rqt_graph
 <p align="left">
-  <img src="image.png" alt="altテキスト" width="1300px">
+  <img src="img/image.png" alt="altテキスト" width="1300px">
 </p>
 
 **/camera/color/image_raw**　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　**/camera/depth/image_rect_raw**
 
 <table>
     <tr>
-        <td><img src="image-2.png" alt=""></td>
-        <td><img src="image-3.png" alt=""></td>
+        <td><img src="img/image-2.png" alt=""></td>
+        <td><img src="img/image-3.png" alt=""></td>
     </tr>
 </table>
 
