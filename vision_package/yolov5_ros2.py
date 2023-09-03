@@ -13,7 +13,7 @@ from rclpy.node import Node
 from cv_bridge import CvBridge, CvBridgeError
 from sensor_msgs.msg import Image, CameraInfo
 from std_msgs.msg import Header
-from bboxes_ex_msgs.msg import BoundingBoxes, BoundingBox
+from toms_msg.msg import BoundingBoxes, BoundingBox
 from std_msgs.msg import Float32MultiArray, MultiArrayLayout, MultiArrayDimension
 
 #yolo_lib

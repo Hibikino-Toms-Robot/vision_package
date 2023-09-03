@@ -1,7 +1,7 @@
 import rclpy  # ROS2のPythonモジュールをインポート
 from rclpy.node import Node 
 from std_msgs.msg import Float32MultiArray, MultiArrayLayout, MultiArrayDimension
-from bboxes_ex_msgs.msg import BoundingBoxes, BoundingBox
+from toms_msg.msg import BoundingBoxes, BoundingBox
 
 
 class Vision_Service(Node):  

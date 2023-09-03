@@ -7,7 +7,7 @@ import numpy as np
 import rclpy  
 from rclpy.node import Node 
 from sensor_msgs.msg import Image
-from bboxes_ex_msgs.msg import BoundingBoxes, BoundingBox
+from toms_msg.msg import BoundingBoxes, BoundingBox
 from cv_bridge import CvBridge, CvBridgeError
 from std_msgs.msg import Float32MultiArray, MultiArrayLayout, MultiArrayDimension
 from sensor_msgs.msg import CameraInfo
