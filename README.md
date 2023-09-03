@@ -28,7 +28,7 @@ git clone git@github.com:suke-toudara/vision_package.git
 /camera/color/image_raw  
 /camera/depth/image_rect_raw  
 
-**rqt_graph
+**rqt_graph**
 <p align="left">
   <img src="img/image.png" alt="altテキスト" width="1300px">
 </p>
