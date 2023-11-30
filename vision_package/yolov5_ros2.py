@@ -11,13 +11,19 @@ import torch.backends.cudnn as cudnn
 import rclpy
 from rclpy.node import Node
 from cv_bridge import CvBridge, CvBridgeError
-from sensor_msgs.msg import Image, CameraInfo
+from sensor_msgs.msg import Image
 from std_msgs.msg import Header
 from toms_msg.msg import BoundingBoxes, BoundingBox
-from std_msgs.msg import Float32MultiArray, MultiArrayLayout, MultiArrayDimension
+
+"""
+@autor yoshida keisuke  
+----------------------
+yolov5による物体検知
+"""
+
 
 #yolo_lib
-sys.path.append("/home/suke/hibikino_toms_ws/src/yolov5")
+sys.path.append("/home/hibikinotoms/hibikino_toms_ws/module/yolov5")
 from models.common import DetectMultiBackend
 from utils.general import (check_img_size, check_imshow, check_requirements,non_max_suppression, print_args, scale_coords)
 from utils.plots import Annotator, colors
@@ -110,7 +116,7 @@ class Yolov5(Node):
             outputs, class_list, confidence_list, x_min_list, y_min_list, x_max_list, y_max_list = self.detect(image_raw)    
             msg = self.yolovFive2bboxes_msgs(bboxes=[x_min_list, y_min_list, x_max_list, y_max_list], scores=confidence_list, cls=class_list, img_header=image.header)
             self.result_pub_.publish(msg)
-            cv2.imshow('object_detect', outputs)   
+            #cv2.imshow('object_detect', outputs)   
             cv2.waitKey(1)
         except CvBridgeError as e:
             self.get_logger().warn(str(e))
@@ -138,7 +144,6 @@ class Yolov5(Node):
         return bboxes_msg
     
         
-        return box_result
     @torch.no_grad()
     def detect(self, img0):
         img = letterbox(img0, self.imgsz, stride=self.stride)[0]
@@ -196,8 +201,8 @@ def main():
     try:
         rclpy.spin(node)
     except KeyboardInterrupt:
-        print("Ctrl+Cが入力されました")  
-        print("プログラム終了")  
+        print("Ctrl+C has been typed")  
+        print("End of Program")  
         node.destroy_node()
         rclpy.shutdown()
     rclpy.shutdown()

@@ -1,3 +1,4 @@
+
 #python tools
 import pyrealsense2 as rs
 import numpy as np
@@ -17,9 +18,16 @@ from sensor_msgs.msg import CameraInfo
 
 #my package
 import sys
-sys.path.append("/home/suke/hibikino_toms_ws/src/vision_package/vision_package")
-from img_tools import ClearViewProcessor,Realsense_Module,Midas
+sys.path.append("/home/hibikinotoms/hibikino_toms_ws/src/vision_package/vision_package")
+from img_tools import ClearViewProcessor,Realsense_Module
 
+
+"""
+@autor yoshida keisuke  
+----------------------
+画像,距離画像,カメラパラメータ配信用ノード
+
+"""
 
 class Image_Publisher(Node):  
     def __init__(self):
@@ -27,10 +35,8 @@ class Image_Publisher(Node):
         self.filter = ClearViewProcessor()
         #param
         self.declare_parameter('cam_num',1)
-        self.declare_parameter('cam_mode',"realsense")
         self.declare_parameter('debug',False)
         self.cam_num = self.get_parameter('cam_num').get_parameter_value().integer_value
-        self.cam_mode = self.get_parameter('cam_mode').get_parameter_value().string_value
         self.debug = self.get_parameter('debug').get_parameter_value().bool_value
         
         #ros2 moduls setup
@@ -41,18 +47,15 @@ class Image_Publisher(Node):
         self.depth_pub_ = self.create_publisher(Image, '/camera/depth/image_rect_raw', 10)
         
         
-        if self.cam_mode == "realsense":
-            if self.cam_num == 2 :
-                self.device = "218622271154"
-                self.realsense = Realsense_Module()
-                fx,fy,cx,cy,width,height = self.realsense.get_cam_param()
-            else :
-                self.realsense = Realsense_Module()
-                fx,fy,cx,cy,width,height = self.realsense.get_cam_param()
-        else : 
-            self.midas = Midas()
-            self.cam = cv2.VideoCapture(-1) 
-
+        
+        if self.cam_num == 2 :
+            self.device = "218622271154"
+            self.realsense = Realsense_Module()
+            fx,fy,cx,cy,width,height = self.realsense.get_cam_param()
+        else :
+            self.realsense = Realsense_Module()
+            fx,fy,cx,cy,width,height = self.realsense.get_cam_param()
+    
         self.camera_info_msg = CameraInfo()
         self.camera_info_msg.header.frame_id = 'camera_frame'
         self.camera_info_msg.width = width
@@ -66,35 +69,22 @@ class Image_Publisher(Node):
 
 
     def timer_callback(self):
-        if self.cam_mode == "realsense":
-            color_image,depth_image = self.realsense.get_image()  
-        else : 
-            ret, color_image = self.cam.read()
-            if not ret:
-                return None,None
-            depth_image = self.midas.estmate(color_image)
-            depth_image = self.midas.normalize_depth(depth_image)       
+        color_image,depth_image = self.realsense.get_image()  
         try:
             #filter
-            color_image = self.filter.adjust_white_balance(color_image)
+            #color_image = self.filter.adjust_white_balance(color_image)
             #publish
             color_msg = self.bridge.cv2_to_imgmsg(color_image, encoding='bgr8')
             depth_msg = self.bridge.cv2_to_imgmsg(depth_image, encoding='mono16')
             self.color_pub_.publish(color_msg)
             self.depth_pub_.publish(depth_msg)
-            cv2.imshow('color', color_image)
-            cv2.imshow('depth', depth_image)
+            # cv2.imshow('color', color_image)
+            # cv2.imshow('depth', depth_image)
             cv2.waitKey(1)  
         except CvBridgeError as e:
             print("Failure to convert") 
   
         self.camera_info_pub_.publish(self.camera_info_msg)
-
-    def limit_area(self,color_image,depth_image,left=0,right=600,top=0,bottom=500):
-        lim_colorimage=color_image[left:right,top:bottom,:]
-        lim_depth_image=depth_image[left:right,top:bottom]
-        return lim_colorimage,lim_depth_image
-
 
 def main():
     rclpy.init() 

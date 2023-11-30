@@ -12,9 +12,16 @@ from torchvision import transforms
 
 #my package
 import sys
-sys.path.append("/home/suke/hibikino_toms_ws/src/deeplabv3/")
+sys.path.append("/home/hibikinotoms/hibikino_toms_ws/module/deeplabv3")
 from deeplab3 import Deeplabv3
         
+
+
+"""
+@autor yoshida keisuke  
+----------------------
+semantic_segmentaion tools
+"""
 
 class Seg_Module(Node):  
     def __init__(self):
@@ -33,7 +40,7 @@ class Seg_Module(Node):
         self.subscriber_ = self.create_subscription(Image,self.image_topic,self.image_callback,10)
 
         #segmentation tools 
-        self.model = Deeplabv3.load_from_checkpoint("/home/suke/hibikino_toms_ws/src/deeplabv3/weights/DeepLabV3_resnet10110-0.26.ckpt",num_class=4)
+        self.model = Deeplabv3.load_from_checkpoint("/home/hibikinotoms/hibikino_toms_ws/module/deeplabv3/weights/DeepLabV3_resnet10110-0.26.ckpt",num_class=4)
         self.model.eval()
         img_height = 475
         img_width =  475
@@ -55,7 +62,7 @@ class Seg_Module(Node):
             outputs = self.segmentation_process(image_raw)
             outputs = cv2.resize(outputs.astype(np.uint8),dsize=(w,h))
             outputs_rgb = self.convert_to_rgb(outputs,self.color_map)     
-            cv2.imshow('object_detect', outputs_rgb)   
+            # cv2.imshow('object_detect', outputs_rgb)   
             cv2.waitKey(1)
         except CvBridgeError as e:
             self.get_logger().warn(str(e))

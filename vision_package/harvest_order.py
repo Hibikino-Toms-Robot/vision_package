@@ -2,6 +2,7 @@
 import PIL  
 import cv2 
 import numpy as np
+import time
 
 #ros2_tools
 import rclpy  
@@ -9,42 +10,43 @@ from rclpy.node import Node
 from sensor_msgs.msg import Image
 from toms_msg.msg import BoundingBoxes, BoundingBox
 from cv_bridge import CvBridge, CvBridgeError
-from std_msgs.msg import Float32MultiArray, MultiArrayLayout, MultiArrayDimension
 from sensor_msgs.msg import CameraInfo
+from toms_msg.msg import TomatoPos, TomatoData
 
 # ros2 message_filters(subscriber)
 from message_filters import Subscriber, ApproximateTimeSynchronizer
 from rclpy.callback_groups import ReentrantCallbackGroup
 
 import sys
-sys.path.append("/home/suke/hibikino_toms_ws/src/vision_package/vision_package")
+sys.path.append("/home/hibikinotoms/hibikino_toms_ws/src/vision_package/vision_package")
+
+
+"""
+@autor yoshida keisuke  
+----------------------
+機能一覧
+[1] 収穫順番決定
+[2] 収穫可能トマト判定 
+[3] トマトへのアプローチ方向(入射角)決定 
+"""
 
 
 # 座標変換ツール
 class Transform():
     def __init__(self) :
         #カメラ高さ
-        self.HIGHT=0
+        self.HIGHT = 480
         #TODO 個々取り付け位置によって変えて
-        cam_pos=np.array([-5.5, 107.0, -4.0])
-        arm_pos=np.array([64.0,-40.0,79.5])
-        world_pos=np.array([0, 0, 0])
-        self.cam_rotation_matrix=np.array([[1,0,0],[0,1,0], [0,0,1]])
-        self.cam_translation_vector=world_pos-cam_pos
-        self.arm_rotation_matrix=np.array([[1,0,0],[0,1,0], [0,0,1]])
-        self.arm_translation_vector=arm_pos-world_pos
+        self.cam2arm_rotation_matrix = np.array([[1,0,0],[0,1,0], [0,0,1]])
+        self.cam2arm_translation_vector = np.array([0,170,0])
 
     def transformation(self,tom_pos_matrix,fx,fy,cx,cy):
         target_coordinates = np.empty((0,4))
         for tom_pos in tom_pos_matrix :
-            u,v,Z,harvest_path = tom_pos[0],tom_pos[1],tom_pos[2],tom_pos[3]
-            #img→cam
-            #camera_coordinate = rs.rs2_deproject_pixel_to_point(self.color_intrinsics , [u,v],Z) #カメラ座標のx,y取得
+            u,v,Z,harvest_path = tom_pos[0],tom_pos[1],tom_pos[4],tom_pos[5]
+            # 画像座標→アーム座標
             camera_coordinate = self.image_to_camera(u,v,Z,fx,fy,cx,cy)
-            #image→arm
-            world_coordinate = self.camera_to_world(camera_coordinate,self.cam_rotation_matrix,self.cam_translation_vector)
-            #target coordinates
-            target_coordinate = self.world_to_arm(world_coordinate,self.arm_rotation_matrix,self.arm_translation_vector)
+            target_coordinate = self.camera_to_arm(camera_coordinate)
             target_coordinate = np.append(target_coordinate, harvest_path)
             target_coordinates = np.vstack((target_coordinates,target_coordinate))
         return target_coordinates
@@ -54,18 +56,12 @@ class Transform():
         Y_c = ((self.HIGHT-v) - cy) * Z / fy
         Z_c = Z
         camera_coordinates = np.array([X_c, Y_c, Z_c])
-        return camera_coordinates         
+        return camera_coordinates  
 
-    def camera_to_world(self,camera_coordinates,rotation_matrix,translation_vector):
-        world_coordinates = rotation_matrix @ camera_coordinates + translation_vector
+    def camera_to_arm(self,camera_coordinates):
+        world_coordinates = self.cam2arm_rotation_matrix @ camera_coordinates + self.cam2arm_translation_vector
         x,y,z = world_coordinates
-        return  np.array([z,x,y])
-
-    def world_to_arm(self,camera_coordinates,rotation_matrix,translation_vector):
-        target_coordinates = rotation_matrix @ camera_coordinates + translation_vector
-        return target_coordinates
-
-
+        return  np.array([x,y,z])
 
 class Harvest_Order(Node):  
     def __init__(self):
@@ -81,7 +77,7 @@ class Harvest_Order(Node):
         
         #ros2 moduls setup
         self.bridge = CvBridge()
-        self.harvest_order_pub_ = self.create_publisher(Float32MultiArray,"/harvest_order",10)
+        self.tomato_pos_pub_ = self.create_publisher(TomatoPos,"/tomato_pos",10)
         
         #subscriber group
         self.callback_group = ReentrantCallbackGroup() 
@@ -89,7 +85,7 @@ class Harvest_Order(Node):
         self.depth_sub = Subscriber(self, Image,'/camera/depth/image_rect_raw',callback_group=self.callback_group)
         self.yolo_sub = Subscriber(self, BoundingBoxes, "Yolov5_Result",callback_group=self.callback_group)
         self.camera_info_sub = Subscriber(self, CameraInfo,'camera_info_topic',callback_group=self.callback_group) 
-        self.ts = ApproximateTimeSynchronizer([self.seg_sub,self.depth_sub,self.yolo_sub,self.camera_info_sub], 10, 0.1) 
+        self.ts = ApproximateTimeSynchronizer([self.seg_sub,self.depth_sub,self.yolo_sub,self.camera_info_sub], 1, 0.1) 
         self.ts.registerCallback(self.callback)
         
     def callback(self,seg_msg,depth_msg,yolo_msg,camera_info_sub):
@@ -115,21 +111,20 @@ class Harvest_Order(Node):
             #self.get_logger().info("収穫順番決定")
             #収穫順番決定
             tom_pos_matrix = self.determine_harvest_order(tom_pos_matrix,depth_img)
+            #self.get_logger().info("画像座標")
             #self.get_logger().info(f"{tom_pos_matrix}")
-            #収穫方向決定
-            tom_pos_matrix = self.determine_harvest_path(tom_pos_matrix,seg_img)
-            #self.get_logger().info(f"{tom_pos_matrix}")
+            time.sleep(3)
             if tom_pos_matrix.size > 0 :
                 #座標変換
                 target_coordinates = self.transform_toos.transformation(tom_pos_matrix,fx,fy,cx,cy)  
-                self.get_logger().info(f"{target_coordinates.shape}")      
-            # self.get_logger().info(f"---------------------")
-            target_coordinates = self._numpy2multiarray(target_coordinates)
-            self.harvest_order_pub_.publish(target_coordinates)
+                # self.get_logger().info(f"---------------------")
+                # self.get_logger().info("アーム座標 : トマト位置")
+                # self.get_logger().info(f"x : {target_coordinates[0][0]} , y : {target_coordinates[0][1]} , z : {target_coordinates[0][2]}") 
+                # self.get_logger().info(f"{target_coordinates.shape}") 
+                tomato_pos = self.tomato_pos_msg(target_coordinates)
+                self.tomato_pos_pub_.publish(tomato_pos)
 
-
-
-
+            
     def determine_harvest_order(self,tom_pos_matrix,depth_img):
         """
         tom_pose_matrix
@@ -167,8 +162,8 @@ class Harvest_Order(Node):
         temp_matrix = tom_pos_matrix
         tom_pos_matrix = np.empty((0,6))
         for i in range(len(temp_matrix)):
-            center_y = int((temp_matrix[i][1]+temp_matrix[i][3])/2)
-            center_x = int((temp_matrix[i][0]+temp_matrix[i][2])/2)
+            center_y = int(temp_matrix[i][1])
+            center_x = int(temp_matrix[i][0])
             depth = depth_img[center_y,center_x]
             new_element = np.array([temp_matrix[i][0],temp_matrix[i][1],temp_matrix[i][2],temp_matrix[i][3],depth,-1])
             tom_pos_matrix = np.vstack((tom_pos_matrix,new_element))
@@ -196,7 +191,6 @@ class Harvest_Order(Node):
         # step4
         sorted_indices = np.lexsort((tom_pos_matrix[:, 4], tom_pos_matrix[:, 5]))
         tom_pos_matrix = tom_pos_matrix[sorted_indices]
-        
         return tom_pos_matrix
 
     def calculate_distance(self,matrix1, matrix2):
@@ -232,19 +226,16 @@ class Harvest_Order(Node):
                 pass
         return  tom_pos_matrix
 
-    def _numpy2multiarray(self, np_array):
-        """Convert numpy.ndarray to multiarray"""
-        multiarray = Float32MultiArray()
-        layout = MultiArrayLayout()
-        for i in range(np_array.ndim):  
-            dim=MultiArrayDimension()
-            dim.label="rows"
-            dim.size=np_array.shape[i]
-            dim.stride=np_array.shape[i]*np_array.dtype.itemsize
-            layout.dim.append(dim)
-        multiarray.layout=layout
-        multiarray.data = np_array.flatten().tolist()
-        return multiarray
+    def tomato_pos_msg(self, target_coordinates):
+        tomato_pos = TomatoPos()
+        for target in target_coordinates:  
+            tomato_data = TomatoData()
+            tomato_data.x = int(target[0])
+            tomato_data.y = int(target[1])
+            tomato_data.z = int(target[2])
+            tomato_data.approach_direction = int(target[3])
+            tomato_pos.tomato_data.append(tomato_data)
+        return tomato_pos
 
 def main():
     rclpy.init() 
