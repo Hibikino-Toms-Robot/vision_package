@@ -22,39 +22,9 @@ def generate_launch_description():
     return LaunchDescription([
         Node(
             package='vision_package',
-            executable='image_publisher',
-            name='image_publisher',
-            parameters = [img_config],
-            output = 'screen',
-        ),
-        Node(
-            package='vision_package',
-            executable='yolov5_ros2',
-            name='yolov5_ros2',
-            parameters = [yolov5_config],
-            #output = 'screen',
-        ),
-        Node(
-            package='vision_package',
-            executable='seg_ros2',
-            name='seg_ros2',
-            parameters = [img_config],
-            #output = 'screen',
-        ),
-
-        Node(
-            package='vision_package',
-            executable='harvest_order',
-            name='harvest_order',
-            parameters = [img_config],
-            output = 'screen',
-        ),
-
-        Node(
-            package='vision_package',
             executable='vision_service',
             name='vision_service',
-            # parameters = [img_config],
+            parameters = [yolov5_config],
             output = 'screen',
         ),
 

@@ -1,8 +1,8 @@
 /**:
   ros__parameters:
     # model param
-    weights: /home/suke/hibikino_toms_ws/src/yolov5/weights/best.pt
-    data : /home/suke/hibikino_toms_ws/src/yolov5/data/data.yaml
+    weights: /home/suke/hibikino_toms_ws/module/yolov5/weights/last.pt
+    data : /home/suke/hibikino_toms_ws/module/yolov5/data/data.yaml
     imgz : 640
     device : "0" # or cpu 
 

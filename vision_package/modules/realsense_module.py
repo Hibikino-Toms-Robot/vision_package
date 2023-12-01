@@ -1,40 +1,8 @@
 import os
-import time
-import cv2 
-import numpy as np
-from skimage import img_as_float64
 #python tools
 import pyrealsense2 as rs
 import numpy as np
 import cv2
-import time
-import math
-import sys
-import torch
-
-
-"""
-@autor yoshida keisuke  
-----------------------
-画像,距離画像,カメラパラメータ配信用ノード
-
-"""
-
-class ClearViewProcessor():
-    def adjust_white_balance(self,image: np.ndarray) :
-        # white balance adjustment for strong neutral white
-        image = cv2.cvtColor(image, cv2.COLOR_BGR2LAB)
-        avg_a = np.average(image[:, :, 1])
-        avg_b = np.average(image[:, :, 2])
-        image[:, :, 1] = image[:, :, 1] - (
-            (avg_a - 128) * (image[:, :, 0] / 255.0) * 1.1
-        )
-        image[:, :, 2] = image[:, :, 2] - (
-            (avg_b - 128) * (image[:, :, 0] / 255.0) * 1.1
-        )
-        image = cv2.cvtColor(image, cv2.COLOR_LAB2BGR)
-        return image
-
 
 class Realsense_Module():
     WIDTH = 640
@@ -78,12 +46,38 @@ class Realsense_Module():
             #conversion unit16⇨numpy
             color_image = np.asanyarray(color_frame.get_data())
             depth_image = np.asanyarray(depth_frame.get_data())
-            return color_image,depth_image,
+            cv2.imshow('color_image',color_image)   
+            cv2.waitKey(1)  
+            return color_image,depth_image,depth_frame
         except Exception as e :
             print(e)
             color_image=None
             depth_image=None
-            return color_image,depth_image
+            depth_frame=None
+            return color_image,depth_image,depth_frame
+
+    def m2mm(self,point):
+        x = int(round(point[0]*1000))
+        y = int(round(point[1]*1000))
+        z = int(round(point[2]*1000))
+        return np.array([x,y,z])
+
+    def imgpoint_to_3dpoint(self,depth_frame,yolo_result) :
+        if len(yolo_result)!=0:
+            result_pos = np.empty((0,3))
+            for r in yolo_result:
+                u1 = round(r.u1)
+                u2 = round(r.u2)
+                v1 = round(r.v1)
+                v2 = round(r.v2)
+                u = int(round((r.u1 + r.u2) / 2))
+                v = int(round((r.v1 + r.v2) / 2))
+                i_d = depth_frame.get_distance(u,v) #距離推定
+                point = rs.rs2_deproject_pixel_to_point(self.color_intrinsics , [u,v], i_d) #カメラ座標のx,y取得
+                result_pos = np.vstack((result_pos,self.m2mm(point)))               
+        else :
+            result_pos = None
+        return result_pos
 
     def depth_filter(self,depth_frame):
         #TODO recursive median filterを入れる

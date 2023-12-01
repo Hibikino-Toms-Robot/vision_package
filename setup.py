@@ -26,10 +26,6 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-            'image_publisher = vision_package.image_publisher:main',
-            'yolov5_ros2 = vision_package.yolov5_ros2:main',
-            'seg_ros2 = vision_package.seg_ros2:main',
-            'harvest_order = vision_package.harvest_order:main',
             'vision_service = vision_package.vision_service:main',
         ],
     },
