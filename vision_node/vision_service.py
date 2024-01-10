@@ -10,6 +10,7 @@ from realsense_module import Realsense_Module
 from seg_tools import Seg_Module
 from yolo_tools import Yolov5
 from harvest_order import Harvest_Order
+from kepoint import Keypoint_Net
 import cv2 
 
 """
@@ -40,6 +41,7 @@ class Vision_Service(Node):
         self.yolo_setup()
         self.segmentation = Seg_Module()
         self.harvest_order = Harvest_Order()
+        self.keypoint = Keypoint_Net()
 
         # timer
         timer_period = 0.01  #(s)
@@ -97,6 +99,9 @@ class Vision_Service(Node):
         if color_img is not None :
             yolo_result = self.yolov5.infor(color_img)  
             seg_img = self.segmentation.infor(color_img)
+            keypoints = self.keypoint.infor(color_img)
+            key = self.keypoint.postprocess(keypoints)
+
             if yolo_result is not None:
                 result_pos =self.realsense.imgpoint_to_3dpoint(depth_frame,yolo_result)
                 #self.get_logger().info(f"{result_pos}")        
